@@ -62,7 +62,9 @@ Over time, this process allows the agent to form a **consistent behavioral ident
 - **LLM Reflection**: Self-assessment using the agent's own reasoning
 
 ### Decision Engine
-- **LLM Backend**: Direct LLM reasoning with personality context
+- **LLM Backend**: LangChain-powered unified interface supporting 9+ providers
+  - OpenAI-compatible: OpenAI, vLLM, Kimi, OpenRouter, AihubMix
+  - Dedicated: Ollama, Gemini, Claude, Minimax
 - **Custom Model Backend**: Fine-tuned model integration
 - **Utility AI Backend**: Score-based action selection
 - Personality-driven prompt construction
@@ -262,14 +264,35 @@ The project supports multiple LLM providers. Configure them in `.env` file:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `LLM_PROVIDER` | Provider type: `vllm`, `ollama`, `openai` | vllm |
-| `LLM_ENDPOINT` | LLM API endpoint | http://localhost:8000/v1/completions |
-| `LLM_MODEL_NAME` | Model name | Qwen/Qwen2.5-1.5B-Instruct |
-| `LLM_API_KEY` | API key (required for OpenAI) | - |
-| `LLM_TEMPERATURE` | Generation temperature | 0.8 |
+| `LLM_PROVIDER` | Provider type (see supported providers below) | openai |
+| `LLM_BASE_URL` | Base URL (auto-detect if empty) | (auto) |
+| `LLM_MODEL_NAME` | Model name | gpt-3.5-turbo |
+| `LLM_API_KEY` | API key (required for cloud providers) | - |
+| `LLM_TEMPERATURE` | Generation temperature (0.0-2.0) | 0.8 |
 | `LLM_MAX_TOKENS` | Maximum generation tokens | 256 |
 
 #### Supported Providers
+
+**OpenAI-Compatible Providers** (use standard OpenAI API format):
+
+| Provider | Description | Example Model |
+|----------|-------------|---------------|
+| `openai` | OpenAI official API | gpt-3.5-turbo, gpt-4 |
+| `vllm` | vLLM local deployment | Qwen/Qwen2.5-1.5B-Instruct |
+| `kimi` | Moonshot AI (月之暗面) | moonshot-v1-8k |
+| `openrouter` | Multi-model aggregator | anthropic/claude-3-opus |
+| `aihubmix` | API proxy service | gpt-3.5-turbo |
+
+**Custom Format Providers** (use provider-specific APIs):
+
+| Provider | Description | Example Model |
+|----------|-------------|---------------|
+| `ollama` | Ollama local deployment | llama2, mistral |
+| `gemini` | Google Gemini | gemini-pro |
+| `claude` | Anthropic Claude | claude-3-sonnet-20240229 |
+| `minimax` | Minimax (海螺AI) | abab5.5-chat |
+
+#### Quick Start Examples
 
 **1. vLLM (Recommended for local deployment)**
 ```bash
@@ -280,7 +303,7 @@ python -m vllm.entrypoints.openai.api_server \
 
 # Configure in .env
 LLM_PROVIDER=vllm
-LLM_ENDPOINT=http://localhost:8000/v1/completions
+LLM_BASE_URL=http://localhost:8000/v1
 LLM_MODEL_NAME=Qwen/Qwen2.5-1.5B-Instruct
 ```
 
@@ -292,7 +315,7 @@ ollama pull llama2
 
 # Configure in .env
 LLM_PROVIDER=ollama
-LLM_ENDPOINT=http://localhost:11434/api/generate
+LLM_BASE_URL=http://localhost:11434
 LLM_MODEL_NAME=llama2
 ```
 
@@ -300,9 +323,36 @@ LLM_MODEL_NAME=llama2
 ```bash
 # Configure in .env
 LLM_PROVIDER=openai
-LLM_ENDPOINT=https://api.openai.com/v1/chat/completions
+LLM_BASE_URL=  # Auto-detect
 LLM_MODEL_NAME=gpt-3.5-turbo
 LLM_API_KEY=sk-your-api-key-here
+```
+
+**4. Kimi (Moonshot AI)**
+```bash
+# Configure in .env
+LLM_PROVIDER=kimi
+LLM_BASE_URL=  # Auto-detect
+LLM_MODEL_NAME=moonshot-v1-8k
+LLM_API_KEY=sk-your-kimi-key
+```
+
+**5. Claude (Anthropic)**
+```bash
+# Configure in .env
+LLM_PROVIDER=claude
+LLM_BASE_URL=  # Auto-detect
+LLM_MODEL_NAME=claude-3-sonnet-20240229
+LLM_API_KEY=sk-ant-your-key
+```
+
+**6. Gemini (Google)**
+```bash
+# Configure in .env
+LLM_PROVIDER=gemini
+LLM_BASE_URL=  # Auto-detect
+LLM_MODEL_NAME=gemini-pro
+LLM_API_KEY=your-google-api-key
 ```
 
 See `configs/llm_providers.example` for more configuration examples.

@@ -1,43 +1,117 @@
 # ==================== LLM Provider Configuration Examples ====================
 # Copy the desired configuration to .env file
 
-# ==================== vLLM (Local Deployment) ====================
-# Run: python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-1.5B-Instruct --port 8000
+# ==================== OpenAI-Compatible Providers ====================
+
+# 1. OpenAI (Official)
+LLM_PROVIDER=openai
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL_NAME=gpt-3.5-turbo
+LLM_API_KEY=sk-your-openai-api-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# 2. vLLM (Local Deployment - OpenAI Compatible)
+# Start: python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-1.5B-Instruct
 LLM_PROVIDER=vllm
-LLM_ENDPOINT=http://localhost:8000/v1/completions
+LLM_BASE_URL=http://localhost:8000/v1
 LLM_MODEL_NAME=Qwen/Qwen2.5-1.5B-Instruct
 LLM_API_KEY=
 LLM_TEMPERATURE=0.8
 LLM_MAX_TOKENS=256
 
-# ==================== Ollama (Local Deployment) ====================
-# Run: ollama serve
-# Pull model: ollama pull llama2
+# 3. Kimi (Moonshot AI - 月之暗面)
+LLM_PROVIDER=kimi
+LLM_BASE_URL=https://api.moonshot.cn/v1
+LLM_MODEL_NAME=moonshot-v1-8k
+LLM_API_KEY=sk-your-kimi-api-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# 4. OpenRouter (Multi-Model Aggregator)
+LLM_PROVIDER=openrouter
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL_NAME=anthropic/claude-3-opus
+LLM_API_KEY=sk-or-your-openrouter-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# 5. AihubMix (中转服务)
+LLM_PROVIDER=aihubmix
+LLM_BASE_URL=https://aihubmix.com/v1
+LLM_MODEL_NAME=gpt-3.5-turbo
+LLM_API_KEY=your-aihubmix-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# ==================== Custom Format Providers ====================
+
+# 6. Ollama (Local Deployment - Easiest)
+# Start: ollama serve
+# Pull: ollama pull llama2
 LLM_PROVIDER=ollama
-LLM_ENDPOINT=http://localhost:11434/api/generate
+LLM_BASE_URL=http://localhost:11434
 LLM_MODEL_NAME=llama2
 LLM_API_KEY=
 LLM_TEMPERATURE=0.8
 LLM_MAX_TOKENS=256
 
-# ==================== OpenAI (Cloud API) ====================
+# 7. Google Gemini
+LLM_PROVIDER=gemini
+LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+LLM_MODEL_NAME=gemini-pro
+LLM_API_KEY=your-google-api-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# 8. Anthropic Claude
+LLM_PROVIDER=claude
+LLM_BASE_URL=https://api.anthropic.com/v1
+LLM_MODEL_NAME=claude-3-sonnet-20240229
+LLM_API_KEY=sk-ant-your-claude-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# 9. Minimax (海螺AI)
+LLM_PROVIDER=minimax
+LLM_BASE_URL=https://api.minimax.chat/v1
+LLM_MODEL_NAME=abab5.5-chat
+LLM_API_KEY=your-minimax-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# ==================== Advanced Configuration Tips ====================
+
+# Auto-detect Base URL
+# If LLM_BASE_URL is empty, the system will use provider's default endpoint
 LLM_PROVIDER=openai
-LLM_ENDPOINT=https://api.openai.com/v1/chat/completions
+LLM_BASE_URL=
 LLM_MODEL_NAME=gpt-3.5-turbo
-LLM_API_KEY=sk-your-openai-api-key-here
-LLM_TEMPERATURE=0.8
-LLM_MAX_TOKENS=256
+LLM_API_KEY=sk-xxx
 
-# ==================== OpenAI Compatible (e.g., Azure, LocalAI) ====================
-LLM_PROVIDER=openai
-LLM_ENDPOINT=https://your-azure-endpoint.openai.azure.com/v1/chat/completions
-LLM_MODEL_NAME=gpt-35-turbo
-LLM_API_KEY=your-azure-api-key
-LLM_TEMPERATURE=0.8
-LLM_MAX_TOKENS=256
+# Temperature Guide:
+# - 0.1-0.3: Deterministic, focused responses
+# - 0.5-0.7: Balanced creativity and consistency
+# - 0.8-1.2: Creative, diverse responses
 
-# ==================== Advanced Configuration ====================
-# For production deployment, consider:
-# - Temperature: Lower (0.3-0.5) for deterministic, Higher (0.8-1.2) for creative
-# - Max Tokens: Adjust based on expected response length
-# - API Key: Use environment variables or secrets management
+# Max Tokens Guide:
+# - 128: Short responses
+# - 256: Medium responses (default)
+# - 512-1024: Long-form responses
+# - 2048+: Extended conversations
+
+# ==================== Provider Comparison ====================
+#
+# | Provider    | Type      | Cost      | Speed   | Quality |
+# |-------------|-----------|-----------|---------|---------|
+# | OpenAI      | Cloud     | $$$       | Fast    | High    |
+# | Claude      | Cloud     | $$$$      | Fast    | High    |
+# | Gemini      | Cloud     | $         | Fast    | Good    |
+# | Kimi        | Cloud     | $$        | Fast    | Good    |
+# | OpenRouter  | Aggregator| Varies    | Fast    | Varies  |
+# | vLLM        | Local     | Free      | Fast*   | Good*   |
+# | Ollama      | Local     | Free      | Medium* | Good*   |
+# | Minimax     | Cloud     | $$        | Fast    | Good    |
+# | AihubMix    | Proxy     | $         | Fast    | Varies  |
+#
+# * Performance depends on local hardware

@@ -1,4 +1,4 @@
-"""Test LLM backend with different providers"""
+"""Test LLM backend with different providers (LangChain version)"""
 
 import sys
 from pathlib import Path
@@ -14,15 +14,21 @@ def test_vllm():
     """Test vLLM provider"""
     print("\n=== Testing vLLM Provider ===")
     backend = LLMBackend(
-        llm_endpoint="http://localhost:8000/v1/completions",
         model_name="Qwen/Qwen2.5-1.5B-Instruct",
         provider="vllm",
+        base_url="http://localhost:8000/v1",
         temperature=0.7,
         max_tokens=50,
     )
     
+    personality_vector = np.array([0.5] * 10)
+    
     try:
-        response = backend._call_vllm("Say hello in one sentence.")
+        response = backend.generate_response(
+            user_input="Say hello in one sentence.",
+            personality_vector=personality_vector,
+            conversation_history=[],
+        )
         print(f"Response: {response}")
         print("✅ vLLM test passed")
     except Exception as e:
@@ -35,15 +41,21 @@ def test_ollama():
     """Test Ollama provider"""
     print("\n=== Testing Ollama Provider ===")
     backend = LLMBackend(
-        llm_endpoint="http://localhost:11434/api/generate",
         model_name="llama2",
         provider="ollama",
+        base_url="http://localhost:11434",
         temperature=0.7,
         max_tokens=50,
     )
     
+    personality_vector = np.array([0.5] * 10)
+    
     try:
-        response = backend._call_ollama("Say hello in one sentence.")
+        response = backend.generate_response(
+            user_input="Say hello in one sentence.",
+            personality_vector=personality_vector,
+            conversation_history=[],
+        )
         print(f"Response: {response}")
         print("✅ Ollama test passed")
     except Exception as e:
@@ -56,7 +68,6 @@ def test_openai():
     """Test OpenAI provider"""
     print("\n=== Testing OpenAI Provider ===")
     backend = LLMBackend(
-        llm_endpoint="https://api.openai.com/v1/chat/completions",
         model_name="gpt-3.5-turbo",
         provider="openai",
         api_key="sk-test",  # Replace with real key
@@ -64,8 +75,14 @@ def test_openai():
         max_tokens=50,
     )
     
+    personality_vector = np.array([0.5] * 10)
+    
     try:
-        response = backend._call_openai("Say hello in one sentence.")
+        response = backend.generate_response(
+            user_input="Say hello in one sentence.",
+            personality_vector=personality_vector,
+            conversation_history=[],
+        )
         print(f"Response: {response}")
         print("✅ OpenAI test passed")
     except Exception as e:
@@ -78,9 +95,9 @@ def test_generate_response():
     """Test full generate_response workflow"""
     print("\n=== Testing Full Workflow ===")
     backend = LLMBackend(
-        llm_endpoint="http://localhost:8000/v1/completions",
         model_name="Qwen/Qwen2.5-1.5B-Instruct",
         provider="vllm",
+        base_url="http://localhost:8000/v1",
     )
     
     personality_vector = np.array([0.5, 0.3, -0.2, 0.1, 0.0, 0.4, -0.3, 0.2, 0.1, -0.1])
@@ -102,7 +119,7 @@ def test_generate_response():
 
 
 if __name__ == "__main__":
-    print("Testing LLM Backend with multiple providers")
+    print("Testing LLM Backend with LangChain Integration")
     print("Note: Make sure corresponding services are running")
     
     # Test individual providers (uncomment as needed)
@@ -112,3 +129,4 @@ if __name__ == "__main__":
     
     # Test full workflow
     test_generate_response()
+
