@@ -9,7 +9,7 @@ from typing import Dict, List
 
 import numpy as np
 
-from ..personality.trait_vector import DIMENSION_LABELS_CN, TraitVector
+from ..personality.trait_vector import TraitVector
 
 logger = logging.getLogger(__name__)
 

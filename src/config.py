@@ -19,12 +19,14 @@ class Config:
 
         # Decision backend configuration
         self.decision_backend = os.getenv("DECISION_BACKEND", "llm")
+        self.llm_provider = os.getenv("LLM_PROVIDER", "vllm")
         self.llm_endpoint = os.getenv(
-            "LLM_ENDPOINT", "http://localhost:8000/v1/gentext"
+            "LLM_ENDPOINT", "http://localhost:8000/v1/completions"
         )
         self.llm_model_name = os.getenv(
             "LLM_MODEL_NAME", "Qwen/Qwen2.5-1.5B-Instruct"
         )
+        self.llm_api_key = os.getenv("LLM_API_KEY", None)
         self.llm_temperature = float(os.getenv("LLM_TEMPERATURE", "0.8"))
         self.llm_max_tokens = int(os.getenv("LLM_MAX_TOKENS", "256"))
 

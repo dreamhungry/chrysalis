@@ -45,6 +45,8 @@ def create_decision_backend(config: Config) -> DecisionBackend:
         return LLMBackend(
             llm_endpoint=config.llm_endpoint,
             model_name=config.llm_model_name,
+            provider=config.llm_provider,
+            api_key=config.llm_api_key,
             temperature=config.llm_temperature,
             max_tokens=config.llm_max_tokens,
         )

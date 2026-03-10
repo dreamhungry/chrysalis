@@ -256,15 +256,66 @@ learning:
 
 ### Environment Variables
 
+The project supports multiple LLM providers. Configure them in `.env` file:
+
+#### LLM Provider Configuration
+
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `LLM_API_BASE` | LLM service endpoint | http://localhost:8000 |
-| `LLM_MODEL` | Model name | qwen2.5 |
-| `LLM_API_KEY` | API key (optional) | - |
+| `LLM_PROVIDER` | Provider type: `vllm`, `ollama`, `openai` | vllm |
+| `LLM_ENDPOINT` | LLM API endpoint | http://localhost:8000/v1/completions |
+| `LLM_MODEL_NAME` | Model name | Qwen/Qwen2.5-1.5B-Instruct |
+| `LLM_API_KEY` | API key (required for OpenAI) | - |
+| `LLM_TEMPERATURE` | Generation temperature | 0.8 |
+| `LLM_MAX_TOKENS` | Maximum generation tokens | 256 |
+
+#### Supported Providers
+
+**1. vLLM (Recommended for local deployment)**
+```bash
+# Start vLLM server
+python -m vllm.entrypoints.openai.api_server \
+  --model Qwen/Qwen2.5-1.5B-Instruct \
+  --port 8000
+
+# Configure in .env
+LLM_PROVIDER=vllm
+LLM_ENDPOINT=http://localhost:8000/v1/completions
+LLM_MODEL_NAME=Qwen/Qwen2.5-1.5B-Instruct
+```
+
+**2. Ollama (Easiest local setup)**
+```bash
+# Install and start Ollama
+ollama serve
+ollama pull llama2
+
+# Configure in .env
+LLM_PROVIDER=ollama
+LLM_ENDPOINT=http://localhost:11434/api/generate
+LLM_MODEL_NAME=llama2
+```
+
+**3. OpenAI API (Cloud service)**
+```bash
+# Configure in .env
+LLM_PROVIDER=openai
+LLM_ENDPOINT=https://api.openai.com/v1/chat/completions
+LLM_MODEL_NAME=gpt-3.5-turbo
+LLM_API_KEY=sk-your-api-key-here
+```
+
+See `configs/llm_providers.example` for more configuration examples.
+
+#### Other Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DECISION_BACKEND` | Decision method | llm |
 | `MEMORY_BACKEND` | Storage backend | markdown |
 | `MEMORY_MARKDOWN_PATH` | Markdown storage path | data/interactions/history.md |
-| `DECISION_BACKEND` | Decision method | llm |
-| `PERSONALITY_PATH` | Personality vector file | data/personality/trait_vector.json |
+| `PERSONALITY_PATH` | Personality vector file | data/personalities/current.json |
+| `LOG_LEVEL` | Logging level | INFO |
 
 ---
 

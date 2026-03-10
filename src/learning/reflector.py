@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 import numpy as np
 
 from ..decision.base import DecisionBackend
-from ..personality.trait_vector import DIMENSION_LABELS_CN, TraitVector
+from ..personality.trait_vector import TraitVector
 
 logger = logging.getLogger(__name__)
 

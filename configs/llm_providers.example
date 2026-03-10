@@ -1,0 +1,43 @@
+# ==================== LLM Provider Configuration Examples ====================
+# Copy the desired configuration to .env file
+
+# ==================== vLLM (Local Deployment) ====================
+# Run: python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen2.5-1.5B-Instruct --port 8000
+LLM_PROVIDER=vllm
+LLM_ENDPOINT=http://localhost:8000/v1/completions
+LLM_MODEL_NAME=Qwen/Qwen2.5-1.5B-Instruct
+LLM_API_KEY=
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# ==================== Ollama (Local Deployment) ====================
+# Run: ollama serve
+# Pull model: ollama pull llama2
+LLM_PROVIDER=ollama
+LLM_ENDPOINT=http://localhost:11434/api/generate
+LLM_MODEL_NAME=llama2
+LLM_API_KEY=
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# ==================== OpenAI (Cloud API) ====================
+LLM_PROVIDER=openai
+LLM_ENDPOINT=https://api.openai.com/v1/chat/completions
+LLM_MODEL_NAME=gpt-3.5-turbo
+LLM_API_KEY=sk-your-openai-api-key-here
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# ==================== OpenAI Compatible (e.g., Azure, LocalAI) ====================
+LLM_PROVIDER=openai
+LLM_ENDPOINT=https://your-azure-endpoint.openai.azure.com/v1/chat/completions
+LLM_MODEL_NAME=gpt-35-turbo
+LLM_API_KEY=your-azure-api-key
+LLM_TEMPERATURE=0.8
+LLM_MAX_TOKENS=256
+
+# ==================== Advanced Configuration ====================
+# For production deployment, consider:
+# - Temperature: Lower (0.3-0.5) for deterministic, Higher (0.8-1.2) for creative
+# - Max Tokens: Adjust based on expected response length
+# - API Key: Use environment variables or secrets management
