@@ -1,7 +1,7 @@
-"""Agent Core - 代理核心对话管理
+"""Agent Core - Agent Core Conversation Management
 
-整合决策后端、人格向量、记忆存储和学习模块，
-提供统一的对话处理接口。
+Integrates decision backend, personality vector, memory storage, and learning modules,
+providing unified conversation processing interface.
 """
 
 import logging
@@ -20,18 +20,19 @@ from ..personality.trait_vector import TraitVector
 
 logger = logging.getLogger(__name__)
 
-# 每隔多少次交互触发一次模式学习
+# Interval for triggering pattern learning
 PATTERN_LEARNING_INTERVAL = 50
-# 每隔多少次交互触发一次RL更新
+# Interval for triggering RL update
 RL_UPDATE_INTERVAL = 20
-# 每隔多少次交互触发一次反思
+# Interval for triggering reflection
 REFLECTION_INTERVAL = 30
 
 
 class AgentCore:
-    """AI代理核心
+    """AI Agent Core
 
-    管理对话流程、人格驱动的响应生成和多种学习机制的调度。
+    Manages conversation flow, personality-driven response generation,
+    and scheduling of multiple learning mechanisms.
     """
 
     def __init__(
@@ -45,24 +46,24 @@ class AgentCore:
         rl_updater: Optional[RLUpdater] = None,
         reflector: Optional[Reflector] = None,
     ):
-        """初始化Agent Core
+        """Initialize Agent Core
 
         Args:
-            decision_backend: 决策后端
-            trait_vector: 人格向量
-            interaction_store: 交互记录存储
-            personality_store: 人格持久化
-            feedback_updater: 反馈更新器
-            pattern_extractor: 模式提取器
-            rl_updater: RL更新器
-            reflector: 反思器
+            decision_backend: Decision backend
+            trait_vector: Personality vector
+            interaction_store: Interaction record storage
+            personality_store: Personality persistence
+            feedback_updater: Feedback updater
+            pattern_extractor: Pattern extractor
+            rl_updater: RL updater
+            reflector: Reflector
         """
         self.decision = decision_backend
         self.personality = trait_vector
         self.memory = interaction_store
         self.personality_store = personality_store
 
-        # 学习模块
+        # Learning modules
         self.feedback_updater = feedback_updater or FeedbackUpdater()
         self.pattern_extractor = pattern_extractor or PatternExtractor()
         self.rl_updater = rl_updater or RLUpdater()
@@ -72,30 +73,30 @@ class AgentCore:
         self._last_interaction_id: Optional[str] = None
 
     def chat(self, user_input: str) -> str:
-        """处理用户输入，生成响应
+        """Process user input and generate response
 
         Args:
-            user_input: 用户输入文本
+            user_input: User input text
 
         Returns:
-            Agent响应文本
+            Agent response text
         """
-        # 1. 获取对话历史
+        # 1. Get conversation history
         conversation_history = self.memory.get_recent(10)
 
-        # 2. 调用决策后端生成响应
+        # 2. Call decision backend to generate response
         response = self.decision.generate_response(
             user_input=user_input,
             personality_vector=self.personality.vector,
             conversation_history=conversation_history,
         )
 
-        # 3. 记录交互
+        # 3. Record interaction
         self._last_interaction_id = self.memory.add_interaction(
             user_input, response
         )
 
-        # 4. 更新计数并触发周期性学习
+        # 4. Update count and trigger periodic learning
         self._interaction_count += 1
         self._trigger_periodic_learning()
 
@@ -108,30 +109,30 @@ class AgentCore:
         return response
 
     def provide_feedback(self, feedback: float, interaction_id: Optional[str] = None) -> None:
-        """接收用户反馈，触发学习
+        """Receive user feedback and trigger learning
 
         Args:
-            feedback: 反馈评分 [0, 1]
-            interaction_id: 关联的交互ID，为空则使用最近一次交互
+            feedback: Feedback score [0, 1]
+            interaction_id: Associated interaction ID, uses most recent interaction if None
         """
         feedback = max(0.0, min(1.0, feedback))
         target_id = interaction_id or self._last_interaction_id
 
-        # 更新交互记录中的反馈
+        # Update feedback in interaction record
         if target_id:
             self.memory.update_feedback(target_id, feedback)
 
-        # 1. 基于反馈的增量更新
+        # 1. Feedback-based incremental update
         self.feedback_updater.update(
             self.personality,
             feedback,
             context={"personality_vector": self.personality.vector.tolist()},
         )
 
-        # 2. 记录RL步骤
+        # 2. Record RL step
         self.rl_updater.record_step(self.personality.vector, feedback)
 
-        # 3. 保存人格状态
+        # 3. Save personality state
         self.personality_store.save(self.personality)
         self.personality_store.save_snapshot(
             self.personality, event=f"feedback_{feedback:.2f}"
@@ -142,10 +143,10 @@ class AgentCore:
         )
 
     def get_personality_info(self) -> Dict:
-        """获取当前人格状态信息
+        """Get current personality state information
 
         Returns:
-            人格信息字典
+            Personality information dictionary
         """
         return {
             "vector": self.personality.vector.tolist(),
@@ -160,10 +161,10 @@ class AgentCore:
         }
 
     def switch_backend(self, new_backend: DecisionBackend) -> None:
-        """动态切换决策后端
+        """Dynamically switch decision backend
 
         Args:
-            new_backend: 新的决策后端实例
+            new_backend: New decision backend instance
         """
         old_info = self.decision.get_backend_info()
         self.decision = new_backend
@@ -176,8 +177,8 @@ class AgentCore:
         )
 
     def _trigger_periodic_learning(self) -> None:
-        """触发周期性学习机制"""
-        # 模式学习
+        """Trigger periodic learning mechanisms"""
+        # Pattern learning
         if self._interaction_count % PATTERN_LEARNING_INTERVAL == 0:
             interactions = self.memory.get_recent(100)
             self.pattern_extractor.update_from_patterns(self.personality, interactions)
@@ -187,7 +188,7 @@ class AgentCore:
             )
             logger.info("Pattern learning triggered at interaction #%d", self._interaction_count)
 
-        # RL更新
+        # RL update
         if (
             self._interaction_count % RL_UPDATE_INTERVAL == 0
             and self.rl_updater.buffer_size > 0
@@ -199,7 +200,7 @@ class AgentCore:
             )
             logger.info("RL update triggered at interaction #%d", self._interaction_count)
 
-        # 反思
+        # Reflection
         if self._interaction_count % REFLECTION_INTERVAL == 0:
             interactions = self.memory.get_recent(20)
             self.reflector.reflect(self.personality, interactions)

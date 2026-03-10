@@ -1,7 +1,7 @@
-"""人格持久化模块
+"""Personality Persistence Module
 
-负责将人格向量状态保存到JSON文件和从文件加载恢复。
-同时维护人格向量的历史快照，用于追踪演化轨迹。
+Responsible for saving personality vector state to JSON file and loading from file.
+Also maintains personality vector history snapshots for tracking evolution trajectory.
 """
 
 import json
@@ -17,34 +17,35 @@ logger = logging.getLogger(__name__)
 
 
 class PersonalityStore:
-    """人格向量持久化管理器
+    """Personality Vector Persistence Manager
 
-    提供人格向量的保存、加载和历史快照管理功能。
+    Provides functionality for saving, loading, and managing history snapshots
+    of personality vectors.
 
     Attributes:
-        storage_path: 人格向量JSON文件路径
-        history_path: 人格演化历史JSON文件路径
+        storage_path: Path to the personality vector JSON file
+        history_path: Path to the personality evolution history JSON file
     """
 
     def __init__(self, storage_path: str):
-        """初始化持久化管理器
+        """Initialize persistence manager
 
         Args:
-            storage_path: JSON文件存储路径
+            storage_path: JSON file storage path
         """
         self.storage_path = Path(storage_path)
         self.history_path = self.storage_path.parent / "evolution_history.json"
         self._ensure_dirs()
 
     def _ensure_dirs(self) -> None:
-        """确保存储目录存在"""
+        """Ensure storage directory exists"""
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
 
     def save(self, trait_vector: TraitVector) -> None:
-        """保存当前人格向量到文件
+        """Save current personality vector to file
 
         Args:
-            trait_vector: 要保存的人格向量
+            trait_vector: Personality vector to save
         """
         data = {
             "saved_at": datetime.now().isoformat(),
@@ -57,10 +58,10 @@ class PersonalityStore:
         logger.info("Personality saved to %s", self.storage_path)
 
     def load(self) -> Optional[TraitVector]:
-        """从文件加载人格向量
+        """Load personality vector from file
 
         Returns:
-            加载的人格向量，文件不存在时返回None
+            Loaded personality vector, or None if file doesn't exist
         """
         if not self.storage_path.exists():
             logger.info("No personality file found at %s", self.storage_path)
@@ -74,13 +75,13 @@ class PersonalityStore:
         return tv
 
     def save_snapshot(self, trait_vector: TraitVector, event: str = "") -> None:
-        """保存人格向量的历史快照
+        """Save a history snapshot of personality vector
 
-        用于追踪人格演化轨迹。
+        Used for tracking personality evolution trajectory.
 
         Args:
-            trait_vector: 当前人格向量状态
-            event: 触发快照的事件描述
+            trait_vector: Current personality vector state
+            event: Description of the event triggering the snapshot
         """
         snapshot = {
             "timestamp": datetime.now().isoformat(),
@@ -88,7 +89,7 @@ class PersonalityStore:
             "trait_vector": trait_vector.to_dict(),
         }
 
-        # 加载已有历史
+        # Load existing history
         history = self._load_history()
         history.append(snapshot)
 
@@ -98,15 +99,15 @@ class PersonalityStore:
         logger.debug("Personality snapshot saved (event: %s)", event)
 
     def get_evolution_history(self) -> List[dict]:
-        """获取人格演化历史
+        """Get personality evolution history
 
         Returns:
-            按时间排序的历史快照列表
+            List of history snapshots sorted by time
         """
         return self._load_history()
 
     def _load_history(self) -> List[dict]:
-        """加载历史文件"""
+        """Load history file"""
         if not self.history_path.exists():
             return []
 

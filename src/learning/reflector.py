@@ -1,7 +1,7 @@
-"""自我反思模块
+"""Self-Reflection Module
 
-使用决策后端（如LLM）对交互历史进行反思分析，
-提取人格调整建议。当决策后端不可用时，使用统计方法替代。
+Uses decision backend (e.g., LLM) to perform reflection analysis on interaction history,
+extracting personality adjustment suggestions. Falls back to statistical methods when decision backend is unavailable.
 """
 
 import json
@@ -17,17 +17,17 @@ logger = logging.getLogger(__name__)
 
 
 class Reflector:
-    """自我反思器
+    """Self-Reflector
 
-    分析交互历史，生成人格调整建议。
-    支持LLM辅助反思和统计分析两种模式。
+    Analyzes interaction history and generates personality adjustment suggestions.
+    Supports both LLM-assisted reflection and statistical analysis modes.
     """
 
     def __init__(self, decision_backend: Optional[DecisionBackend] = None):
-        """初始化反思器
+        """Initialize reflector
 
         Args:
-            decision_backend: 决策后端（可选，用于LLM辅助反思）
+            decision_backend: Decision backend (optional, for LLM-assisted reflection)
         """
         self.decision_backend = decision_backend
 
@@ -37,20 +37,20 @@ class Reflector:
         interactions: List[Dict],
         learning_rate: float = 0.05,
     ) -> Optional[Dict]:
-        """执行自我反思并更新人格向量
+        """Execute self-reflection and update personality vector
 
         Args:
-            trait_vector: 当前人格向量
-            interactions: 交互历史
-            learning_rate: 学习率
+            trait_vector: Current personality vector
+            interactions: Interaction history
+            learning_rate: Learning rate
 
         Returns:
-            反思结果字典，包含分析和调整信息
+            Reflection result dictionary containing analysis and adjustment information
         """
         if not interactions:
             return None
 
-        # 根据后端类型选择反思方式
+        # Choose reflection method based on backend type
         if (
             self.decision_backend is not None
             and self.decision_backend.get_backend_info().get("type") == "llm"
@@ -69,18 +69,18 @@ class Reflector:
     def _llm_reflect(
         self, trait_vector: TraitVector, interactions: List[Dict]
     ) -> Dict:
-        """使用LLM进行自我反思"""
-        # 构建反思prompt
+        """Perform self-reflection using LLM"""
+        # Build reflection prompt
         reflection_prompt = self._build_reflection_prompt(trait_vector, interactions)
 
         try:
             response = self.decision_backend.generate_response(
                 user_input=reflection_prompt,
-                personality_vector=np.zeros(trait_vector.dimensions),  # 反思时不注入人格
+                personality_vector=np.zeros(trait_vector.dimensions),  # Don't inject personality during reflection
                 conversation_history=[],
             )
 
-            # 尝试解析LLM输出为调整向量
+            # Try to parse LLM output as adjustment vector
             adjustment = self._parse_reflection_response(
                 response, trait_vector.dimensions
             )
@@ -97,7 +97,7 @@ class Reflector:
     def _statistical_reflect(
         self, trait_vector: TraitVector, interactions: List[Dict]
     ) -> Dict:
-        """使用统计方法进行反思"""
+        """Perform reflection using statistical methods"""
         feedbacks = [
             r["feedback"]
             for r in interactions
@@ -105,32 +105,32 @@ class Reflector:
         ]
 
         adjustment = np.zeros(trait_vector.dimensions)
-        analysis = "统计反思分析:\n"
+        analysis = "Statistical reflection analysis:\n"
 
         if feedbacks:
             avg_feedback = np.mean(feedbacks)
             recent_feedbacks = feedbacks[-10:]
             recent_avg = np.mean(recent_feedbacks) if recent_feedbacks else avg_feedback
 
-            analysis += f"- 总体平均反馈: {avg_feedback:.2f}\n"
-            analysis += f"- 近期平均反馈: {recent_avg:.2f}\n"
+            analysis += f"- Overall average feedback: {avg_feedback:.2f}\n"
+            analysis += f"- Recent average feedback: {recent_avg:.2f}\n"
 
-            # 如果近期反馈改善 → 强化当前方向
+            # If recent feedback improved -> reinforce current direction
             if recent_avg > avg_feedback + 0.05:
                 adjustment = 0.05 * trait_vector.vector
-                analysis += "- 趋势: 近期表现改善，强化当前人格方向\n"
-            # 如果近期反馈下降 → 小幅回调
+                analysis += "- Trend: Recent performance improved, reinforcing current personality direction\n"
+            # If recent feedback declined -> small rollback
             elif recent_avg < avg_feedback - 0.05:
                 adjustment = -0.03 * trait_vector.vector
-                analysis += "- 趋势: 近期表现下降，小幅回调人格方向\n"
+                analysis += "- Trend: Recent performance declined, slightly rolling back personality direction\n"
             else:
-                analysis += "- 趋势: 表现稳定，维持当前状态\n"
+                analysis += "- Trend: Performance stable, maintaining current state\n"
 
-            # 反馈方差分析
+            # Feedback variance analysis
             if np.std(feedbacks) > 0.3:
-                analysis += "- 注意: 反馈波动较大，需要更多数据观察\n"
+                analysis += "- Note: High feedback variance, need more data for observation\n"
         else:
-            analysis += "- 暂无用户反馈数据\n"
+            analysis += "- No user feedback data available\n"
 
         return {
             "method": "statistical_reflection",
@@ -141,17 +141,17 @@ class Reflector:
     def _build_reflection_prompt(
         self, trait_vector: TraitVector, interactions: List[Dict]
     ) -> str:
-        """构建LLM反思提示"""
+        """Build LLM reflection prompt"""
         current_desc = trait_vector.to_description()
 
-        # 取最近几条交互作为样本
+        # Take recent interactions as samples
         recent = interactions[-5:]
         conversation_samples = ""
         for r in recent:
-            conversation_samples += f"用户: {r.get('user_input', '')}\n"
-            conversation_samples += f"助手: {r.get('agent_response', '')}\n"
+            conversation_samples += f"User: {r.get('user_input', '')}\n"
+            conversation_samples += f"Assistant: {r.get('agent_response', '')}\n"
             if r.get("feedback") is not None:
-                conversation_samples += f"反馈评分: {r['feedback']:.2f}\n"
+                conversation_samples += f"Feedback score: {r['feedback']:.2f}\n"
             conversation_samples += "\n"
 
         feedbacks = [
@@ -162,15 +162,15 @@ class Reflector:
         avg_feedback = np.mean(feedbacks) if feedbacks else 0.5
 
         prompt = (
-            f"你是一个AI人格分析师。请分析以下对话历史和反馈数据，"
-            f"为AI助手的人格特征调整提供建议。\n\n"
-            f"当前人格特征: {current_desc}\n"
-            f"平均用户反馈: {avg_feedback:.2f}\n\n"
-            f"近期对话样本:\n{conversation_samples}\n"
-            f"请用JSON格式返回人格调整建议，格式为:\n"
+            f"You are an AI personality analyst. Please analyze the following conversation history and feedback data, "
+            f"provide suggestions for AI assistant's personality trait adjustments.\n\n"
+            f"Current personality traits: {current_desc}\n"
+            f"Average user feedback: {avg_feedback:.2f}\n\n"
+            f"Recent conversation samples:\n{conversation_samples}\n"
+            f"Please return personality adjustment suggestions in JSON format:\n"
             f'{{"adjustment": [v0, v1, ..., v9]}}\n'
-            f"其中每个值在 [-0.2, 0.2] 范围内，"
-            f"正数表示增强，负数表示减弱。"
+            f"Where each value is in [-0.2, 0.2] range, "
+            f"positive means enhance, negative means reduce."
         )
 
         return prompt
@@ -178,18 +178,18 @@ class Reflector:
     def _parse_reflection_response(
         self, response: str, dimensions: int
     ) -> np.ndarray:
-        """解析LLM反思响应为调整向量"""
+        """Parse LLM reflection response into adjustment vector"""
         try:
-            # 尝试从响应中提取JSON
+            # Try to extract JSON from response
             start = response.find("{")
             end = response.rfind("}") + 1
             if start >= 0 and end > start:
                 data = json.loads(response[start:end])
                 if "adjustment" in data:
                     adj = np.array(data["adjustment"][:dimensions], dtype=np.float64)
-                    # 限制调整幅度
+                    # Limit adjustment magnitude
                     adj = np.clip(adj, -0.2, 0.2)
-                    # 补齐维度
+                    # Pad dimensions if needed
                     if len(adj) < dimensions:
                         adj = np.pad(adj, (0, dimensions - len(adj)))
                     return adj

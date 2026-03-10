@@ -1,4 +1,4 @@
-"""Agent Core Module - 代理核心对话管理"""
+"""Agent Core Module - Agent Core Conversation Management"""
 
 from .agent_core import AgentCore
 

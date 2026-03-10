@@ -1,1 +1,1 @@
-# placeholder - 预留自训练模型后端
+# placeholder - reserved for self-trained model backend

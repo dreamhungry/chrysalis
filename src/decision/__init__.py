@@ -1,4 +1,4 @@
-"""Decision Backend Module - 抽象决策接口与多后端实现"""
+"""Decision Backend Module - Abstract Decision Interface and Multi-Backend Implementation"""
 
 from .base import DecisionBackend
 

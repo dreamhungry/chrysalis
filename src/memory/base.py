@@ -1,6 +1,7 @@
-"""存储后端抽象接口
+"""Storage Backend Abstract Interface
 
-定义统一的CRUD和语义搜索接口，支持无缝切换不同存储实现。
+Defines unified CRUD and semantic search interfaces,
+supporting seamless switching between different storage implementations.
 """
 
 from abc import ABC, abstractmethod
@@ -8,10 +9,10 @@ from typing import Any, Dict, List, Optional
 
 
 class MemoryBackend(ABC):
-    """存储后端抽象基类
+    """Storage Backend Abstract Base Class
 
-    支持从Markdown文件到向量数据库的无缝切换。
-    所有具体后端实现必须遵循此接口。
+    Supports seamless switching from Markdown files to vector databases.
+    All concrete backend implementations must follow this interface.
     """
 
     @abstractmethod
@@ -23,54 +24,54 @@ class MemoryBackend(ABC):
         metadata: Optional[Dict[str, Any]] = None,
         embedding: Optional[List[float]] = None,
     ) -> str:
-        """添加交互记录
+        """Add interaction record
 
         Args:
-            user_input: 用户输入文本
-            agent_response: Agent响应文本
-            feedback: 用户反馈评分 [0, 1]
-            metadata: 额外元数据
-            embedding: 文本向量嵌入（预留向量数据库使用）
+            user_input: User input text
+            agent_response: Agent response text
+            feedback: User feedback score [0, 1]
+            metadata: Additional metadata
+            embedding: Text vector embedding (reserved for vector database use)
 
         Returns:
-            交互记录的唯一ID
+            Unique ID of the interaction record
         """
         pass
 
     @abstractmethod
     def update_feedback(self, interaction_id: str, feedback: float) -> bool:
-        """更新指定交互记录的反馈
+        """Update feedback for a specific interaction record
 
         Args:
-            interaction_id: 交互记录ID
-            feedback: 反馈评分 [0, 1]
+            interaction_id: Interaction record ID
+            feedback: Feedback score [0, 1]
 
         Returns:
-            是否更新成功
+            Whether update was successful
         """
         pass
 
     @abstractmethod
     def get_recent(self, n: int = 10) -> List[Dict]:
-        """获取最近N条交互
+        """Get the most recent N interactions
 
         Args:
-            n: 返回数量
+            n: Number to return
 
         Returns:
-            交互记录列表，按时间倒序
+            List of interaction records, sorted by time descending
         """
         pass
 
     @abstractmethod
     def get_by_id(self, interaction_id: str) -> Optional[Dict]:
-        """根据ID获取交互记录
+        """Get interaction record by ID
 
         Args:
-            interaction_id: 交互记录ID
+            interaction_id: Interaction record ID
 
         Returns:
-            交互记录字典，不存在时返回None
+            Interaction record dict, or None if not found
         """
         pass
 
@@ -78,32 +79,32 @@ class MemoryBackend(ABC):
     def search_similar(
         self, query_embedding: List[float], top_k: int = 5
     ) -> List[Dict]:
-        """语义相似度搜索
+        """Semantic similarity search
 
         Args:
-            query_embedding: 查询向量
-            top_k: 返回最相似的K条记录
+            query_embedding: Query vector
+            top_k: Return top K most similar records
 
         Returns:
-            交互记录列表，按相似度排序
+            List of interaction records, sorted by similarity
         """
         pass
 
     @abstractmethod
     def get_all_feedbacks(self) -> List[Dict]:
-        """获取所有包含反馈的交互记录
+        """Get all interaction records containing feedback
 
         Returns:
-            包含feedback字段的交互记录列表
+            List of interaction records with feedback field
         """
         pass
 
     @abstractmethod
     def count(self) -> int:
-        """获取交互记录总数"""
+        """Get total number of interaction records"""
         pass
 
     @abstractmethod
     def save(self) -> None:
-        """持久化数据到存储"""
+        """Persist data to storage"""
         pass

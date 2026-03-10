@@ -1,6 +1,7 @@
-"""Prompt构建器
+"""Prompt Builder
 
-负责将人格向量转换为自然语言描述，并构建LLM所需的完整提示。
+Responsible for converting personality vectors to natural language descriptions
+and building complete prompts needed by LLM.
 """
 
 import logging
@@ -14,31 +15,32 @@ logger = logging.getLogger(__name__)
 
 
 class PromptBuilder:
-    """人格驱动的Prompt构建器
+    """Personality-Driven Prompt Builder
 
-    将人格向量转换为自然语言描述，并组装系统提示和对话历史。
+    Converts personality vectors to natural language descriptions
+    and assembles system prompts and conversation history.
     """
 
     def __init__(self, base_system_prompt: str = ""):
-        """初始化构建器
+        """Initialize builder
 
         Args:
-            base_system_prompt: 基础系统提示（人格描述会追加到此之后）
+            base_system_prompt: Base system prompt (personality description will be appended after this)
         """
         self.base_system_prompt = base_system_prompt or (
-            "你是Chrysalis，一个拥有独特人格特质的AI助手。"
-            "你的人格特征会随着与用户的交互逐渐演化。"
+            "You are Chrysalis, an AI assistant with unique personality traits."
+            "Your personality characteristics will gradually evolve through interactions with users."
         )
 
     def vector_to_text(self, personality_vector: np.ndarray, threshold: float = 0.3) -> str:
-        """将人格向量转换为自然语言描述
+        """Convert personality vector to natural language description
 
         Args:
-            personality_vector: 人格向量
-            threshold: 显著性阈值
+            personality_vector: Personality vector
+            threshold: Significance threshold
 
         Returns:
-            人格特征的自然语言描述
+            Natural language description of personality traits
         """
         tv = TraitVector(
             dimensions=len(personality_vector),
@@ -47,20 +49,20 @@ class PromptBuilder:
         return tv.to_description(threshold)
 
     def build_system_prompt(self, personality_vector: np.ndarray) -> str:
-        """构建包含人格描述的系统提示
+        """Build system prompt containing personality description
 
         Args:
-            personality_vector: 当前人格向量
+            personality_vector: Current personality vector
 
         Returns:
-            完整系统提示字符串
+            Complete system prompt string
         """
         personality_desc = self.vector_to_text(personality_vector)
 
         system_prompt = (
             f"{self.base_system_prompt}\n\n"
-            f"你当前的人格特征：{personality_desc}。\n"
-            f"请在对话中自然地体现这些特征，不要直接提及你的人格设定。"
+            f"Your current personality traits: {personality_desc}.\n"
+            f"Please naturally reflect these traits in conversation, without directly mentioning your personality settings."
         )
 
         return system_prompt
@@ -72,20 +74,20 @@ class PromptBuilder:
         user_input: str,
         max_history: int = 10,
     ) -> List[Dict[str, str]]:
-        """构建LLM的消息列表
+        """Build LLM message list
 
         Args:
-            system_prompt: 系统提示
-            conversation_history: 对话历史记录
-            user_input: 当前用户输入
-            max_history: 最大历史轮数
+            system_prompt: System prompt
+            conversation_history: Conversation history records
+            user_input: Current user input
+            max_history: Maximum history turns
 
         Returns:
-            消息列表，格式为 [{"role": "...", "content": "..."}]
+            Message list in format [{"role": "...", "content": "..."}]
         """
         messages = [{"role": "system", "content": system_prompt}]
 
-        # 添加历史对话
+        # Add historical conversation
         recent_history = conversation_history[-max_history:]
         for record in recent_history:
             messages.append(
@@ -95,7 +97,7 @@ class PromptBuilder:
                 {"role": "assistant", "content": record.get("agent_response", "")}
             )
 
-        # 添加当前用户输入
+        # Add current user input
         messages.append({"role": "user", "content": user_input})
 
         return messages
@@ -106,26 +108,26 @@ class PromptBuilder:
         conversation_history: List[Dict],
         user_input: str,
     ) -> str:
-        """构建纯文本格式的prompt（用于非chat模式的LLM）
+        """Build plain text format prompt (for non-chat mode LLM)
 
         Args:
-            personality_vector: 人格向量
-            conversation_history: 对话历史
-            user_input: 用户输入
+            personality_vector: Personality vector
+            conversation_history: Conversation history
+            user_input: User input
 
         Returns:
-            完整prompt文本
+            Complete prompt text
         """
         system_prompt = self.build_system_prompt(personality_vector)
 
-        parts = [f"[系统指令]\n{system_prompt}\n"]
+        parts = [f"[System Instruction]\n{system_prompt}\n"]
 
-        # 添加历史对话
+        # Add historical conversation
         for record in conversation_history[-5:]:
-            parts.append(f"[用户]: {record.get('user_input', '')}")
-            parts.append(f"[助手]: {record.get('agent_response', '')}")
+            parts.append(f"[User]: {record.get('user_input', '')}")
+            parts.append(f"[Assistant]: {record.get('agent_response', '')}")
 
-        parts.append(f"[用户]: {user_input}")
-        parts.append("[助手]: ")
+        parts.append(f"[User]: {user_input}")
+        parts.append("[Assistant]: ")
 
         return "\n".join(parts)

@@ -1,4 +1,4 @@
-"""Personality Learning Module - 多机制人格学习"""
+"""Personality Learning Module - Multi-Mechanism Personality Learning"""
 
 from .feedback_updater import FeedbackUpdater
 from .pattern_extractor import PatternExtractor

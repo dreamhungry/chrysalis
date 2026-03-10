@@ -1,6 +1,6 @@
-"""系统初始化工厂
+"""System Initialization Factory
 
-根据配置创建并组装所有模块实例，提供统一的系统启动入口。
+Creates and assembles all module instances based on configuration, providing unified system startup entry point.
 """
 
 import logging
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging(config: Config) -> None:
-    """配置日志系统"""
+    """Configure logging system"""
     log_path = config.get_absolute_path(config.log_path)
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -40,7 +40,7 @@ def setup_logging(config: Config) -> None:
 
 
 def create_decision_backend(config: Config) -> DecisionBackend:
-    """根据配置创建决策后端"""
+    """Create decision backend based on configuration"""
     if config.decision_backend == "llm":
         return LLMBackend(
             llm_endpoint=config.llm_endpoint,
@@ -53,22 +53,22 @@ def create_decision_backend(config: Config) -> DecisionBackend:
 
 
 def create_agent(config: Optional[Config] = None) -> AgentCore:
-    """创建完整的Agent实例
+    """Create complete Agent instance
 
-    根据配置组装所有模块。
+    Assembles all modules based on configuration.
 
     Args:
-        config: 配置对象，为空则加载默认配置
+        config: Config object, loads default config if None
 
     Returns:
-        组装完成的AgentCore实例
+        Assembled AgentCore instance
     """
     if config is None:
         config = Config.load()
 
     setup_logging(config)
 
-    # 1. 创建人格向量和持久化
+    # 1. Create personality vector and persistence
     personality_path = str(config.get_absolute_path(config.personality_storage_path))
     personality_store = PersonalityStore(personality_path)
 
@@ -77,16 +77,16 @@ def create_agent(config: Optional[Config] = None) -> AgentCore:
         trait_vector = TraitVector(dimensions=config.personality_dimensions)
         logger.info("Initialized new personality vector (%d dimensions)", config.personality_dimensions)
 
-    # 2. 创建记忆存储
+    # 2. Create memory storage
     memory_path = str(config.get_absolute_path(config.memory_markdown_path))
     interaction_store = MemoryManager.create_store(
         config.memory_backend, storage_path=memory_path
     )
 
-    # 3. 创建决策后端
+    # 3. Create decision backend
     decision_backend = create_decision_backend(config)
 
-    # 4. 创建学习模块
+    # 4. Create learning modules
     feedback_updater = FeedbackUpdater(
         base_learning_rate=config.personality_learning_rate
     )
@@ -94,7 +94,7 @@ def create_agent(config: Optional[Config] = None) -> AgentCore:
     rl_updater = RLUpdater()
     reflector = Reflector(decision_backend)
 
-    # 5. 组装AgentCore
+    # 5. Assemble AgentCore
     agent = AgentCore(
         decision_backend=decision_backend,
         trait_vector=trait_vector,
@@ -106,7 +106,7 @@ def create_agent(config: Optional[Config] = None) -> AgentCore:
         reflector=reflector,
     )
 
-    # 保存初始人格状态
+    # Save initial personality state
     personality_store.save(trait_vector)
 
     logger.info(

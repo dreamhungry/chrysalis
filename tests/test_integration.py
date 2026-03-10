@@ -1,7 +1,7 @@
-"""端到端集成测试
+"""End-to-End Integration Tests
 
-验证各模块的正确性和协同工作能力。
-无需LLM服务即可运行（使用Mock后端）。
+Validates correctness and collaboration of all modules.
+Can run without LLM service (using Mock backend).
 """
 
 import json
@@ -10,12 +10,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Windows终端UTF-8兼容
+# Windows terminal UTF-8 compatibility
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-# 确保项目根目录在Python路径中
+# Ensure project root directory is in Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -34,25 +34,25 @@ from src.personality.trait_vector import TraitVector
 from src.agent.agent_core import AgentCore
 
 
-# ==================== Mock决策后端 ====================
+# ==================== Mock Decision Backend ====================
 
 class MockDecisionBackend(DecisionBackend):
-    """模拟决策后端，用于测试"""
+    """Mock decision backend for testing"""
 
     def __init__(self):
         self._call_count = 0
 
     def generate_response(self, user_input, personality_vector, conversation_history, context=None):
         self._call_count += 1
-        # 根据人格向量生成不同风格的响应
+        # Generate different style responses based on personality vector
         friendliness = personality_vector[0] if len(personality_vector) > 0 else 0
         if friendliness > 0.3:
-            prefix = "你好呀！"
+            prefix = "Hello there!"
         elif friendliness < -0.3:
-            prefix = "嗯。"
+            prefix = "Hmm."
         else:
             prefix = ""
-        return f"{prefix}这是对「{user_input}」的回复 (#{self._call_count})"
+        return f"{prefix} This is a response to '{user_input}' (#{self._call_count})"
 
     def update_model(self, training_data):
         return False
@@ -64,194 +64,193 @@ class MockDecisionBackend(DecisionBackend):
         return {"type": "mock", "calls": self._call_count}
 
 
-# ==================== 测试函数 ====================
+# ==================== Test Functions ====================
 
 def test_trait_vector():
-    """测试人格向量模块"""
+    """Test personality vector module"""
     print("=" * 50)
-    print("测试 1: TraitVector 人格向量")
+    print("Test 1: TraitVector Personality Vector")
     print("=" * 50)
 
-    # 创建和初始化
+    # Create and initialize
     tv = TraitVector(dimensions=10)
     assert tv.dimensions == 10
     assert np.allclose(tv.vector, np.zeros(10))
-    print("  ✓ 初始化为零向量")
+    print("  [OK] Initialized to zero vector")
 
-    # 设置特征值
+    # Set trait values
     tv.set_trait("friendliness", 0.8)
     tv.set_trait("humor", 0.6)
     assert abs(tv.get_trait("friendliness") - 0.8) < 1e-6
-    print("  ✓ 设置和获取特征值")
+    print("  [OK] Set and get trait values")
 
-    # 增量更新
+    # Incremental update
     delta = np.array([0.1] * 10)
     tv.update(delta, learning_rate=0.5)
-    assert tv.get_trait("friendliness") <= 1.0  # 不超过边界
-    print("  ✓ 增量更新和归一化")
+    assert tv.get_trait("friendliness") <= 1.0  # Not exceeding boundary
+    print("  [OK] Incremental update and normalization")
 
-    # 序列化/反序列化
+    # Serialization/deserialization
     json_str = tv.to_json()
     tv2 = TraitVector.from_json(json_str)
     assert np.allclose(tv.vector, tv2.vector)
-    print("  ✓ JSON序列化/反序列化")
+    print("  [OK] JSON serialization/deserialization")
 
-    # 自然语言描述
+    # Natural language description
     desc = tv.to_description()
     assert isinstance(desc, str) and len(desc) > 0
-    print(f"  ✓ 人格描述: {desc}")
+    print(f"  [OK] Personality description: {desc}")
 
-    # 相似度计算
+    # Similarity calculation
     tv3 = TraitVector(dimensions=10, initial_values=tv.vector * 0.5)
     dist = tv.distance(tv3)
     sim = tv.cosine_similarity(tv3)
-    print(f"  ✓ 距离={dist:.3f}, 余弦相似度={sim:.3f}")
+    print(f"  [OK] Distance={dist:.3f}, Cosine similarity={sim:.3f}")
 
-    print("  [PASS] TraitVector 测试通过\n")
+    print("  [PASS] TraitVector test passed\n")
 
 
 def test_personality_store():
-    """测试人格持久化"""
+    """Test personality persistence"""
     print("=" * 50)
-    print("测试 2: PersonalityStore 持久化")
+    print("Test 2: PersonalityStore Persistence")
     print("=" * 50)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         store = PersonalityStore(os.path.join(tmpdir, "personality.json"))
 
-        # 保存
+        # Save
         tv = TraitVector(dimensions=10)
         tv.set_trait("friendliness", 0.7)
         tv.set_trait("creativity", -0.3)
         store.save(tv)
-        print("  ✓ 保存人格向量")
+        print("  [OK] Saved personality vector")
 
-        # 加载
+        # Load
         tv_loaded = store.load()
         assert tv_loaded is not None
         assert abs(tv_loaded.get_trait("friendliness") - 0.7) < 1e-6
-        print("  ✓ 加载人格向量")
+        print("  [OK] Loaded personality vector")
 
-        # 历史快照
+        # History snapshots
         store.save_snapshot(tv, event="test_event")
         store.save_snapshot(tv, event="test_event_2")
         history = store.get_evolution_history()
         assert len(history) == 2
-        print(f"  ✓ 历史快照: {len(history)}条")
+        print(f"  [OK] History snapshots: {len(history)} records")
 
-    print("  [PASS] PersonalityStore 测试通过\n")
+    print("  [PASS] PersonalityStore test passed\n")
 
 
 def test_markdown_memory():
-    """测试Markdown记忆存储"""
+    """Test Markdown memory storage"""
     print("=" * 50)
-    print("测试 3: MarkdownFileBackend 记忆存储")
+    print("Test 3: MarkdownFileBackend Memory Storage")
     print("=" * 50)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         md_path = os.path.join(tmpdir, "history.md")
         backend = MarkdownFileBackend(md_path)
 
-        # 添加交互
-        id1 = backend.add_interaction("你好", "你好！有什么可以帮你的？")
+        # Add interactions
+        id1 = backend.add_interaction("Hello", "Hello! How can I help you?")
         id2 = backend.add_interaction(
-            "天气怎么样？", "今天天气不错。", feedback=0.8
+            "How's the weather?", "The weather is nice today.", feedback=0.8
         )
         id3 = backend.add_interaction(
-            "谢谢", "不客气！", metadata={"topic": "greeting"}
+            "Thanks", "You're welcome!", metadata={"topic": "greeting"}
         )
         assert backend.count() == 3
-        print(f"  ✓ 添加3条交互 (IDs: {id1[:8]}..., {id2[:8]}..., {id3[:8]}...)")
+        print(f"  [OK] Added 3 interactions (IDs: {id1[:8]}..., {id2[:8]}..., {id3[:8]}...)")
 
-        # 查询最近记录
+        # Query recent records
         recent = backend.get_recent(2)
         assert len(recent) == 2
-        assert recent[-1]["user_input"] == "谢谢"
-        print("  ✓ 查询最近记录")
+        assert recent[-1]["user_input"] == "Thanks"
+        print("  [OK] Queried recent records")
 
-        # 按ID查询
+        # Query by ID
         record = backend.get_by_id(id2)
         assert record is not None
         assert record["feedback"] == 0.8
-        print("  ✓ 按ID查询")
+        print("  [OK] Queried by ID")
 
-        # 获取反馈记录
+        # Get feedback records
         feedbacks = backend.get_all_feedbacks()
         assert len(feedbacks) == 1
-        print("  ✓ 获取反馈记录")
+        print("  [OK] Retrieved feedback records")
 
-        # 更新反馈
+        # Update feedback
         success = backend.update_feedback(id1, 0.9)
         assert success
         assert backend.get_by_id(id1)["feedback"] == 0.9
-        print("  ✓ 更新反馈")
+        print("  [OK] Updated feedback")
 
-        # 验证Markdown文件内容
+        # Verify Markdown file content
         with open(md_path, "r", encoding="utf-8") as f:
             content = f.read()
-        assert "# Chrysalis 交互历史记录" in content
-        assert "你好" in content
-        assert "天气怎么样" in content
-        assert "⭐" in content
-        print("  ✓ Markdown文件格式正确")
+        assert "# Chrysalis Interaction History" in content
+        assert "Hello" in content
+        assert "How's the weather?" in content
+        print("  [OK] Markdown file format correct")
 
-        # 测试重新加载（从文件解析）
+        # Test reload (parse from file)
         backend2 = MarkdownFileBackend(md_path)
-        assert backend2.count() >= 3  # 至少3条（可能包含反馈更新记录的解析）
-        print(f"  ✓ 重新加载: {backend2.count()}条记录")
+        assert backend2.count() >= 3  # At least 3 (may include feedback update records)
+        print(f"  [OK] Reloaded: {backend2.count()} records")
 
-    print("  [PASS] MarkdownFileBackend 测试通过\n")
+    print("  [PASS] MarkdownFileBackend test passed\n")
 
 
 def test_memory_manager():
-    """测试记忆管理器工厂"""
+    """Test memory manager factory"""
     print("=" * 50)
-    print("测试 4: MemoryManager 工厂")
+    print("Test 4: MemoryManager Factory")
     print("=" * 50)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         md_path = os.path.join(tmpdir, "history.md")
         store = MemoryManager.create_store("markdown", storage_path=md_path)
 
-        store.add_interaction("测试", "收到")
+        store.add_interaction("Test", "Received")
         assert store.count() == 1
-        print("  ✓ 通过工厂创建Markdown存储")
+        print("  [OK] Created Markdown storage via factory")
 
-    print("  [PASS] MemoryManager 测试通过\n")
+    print("  [PASS] MemoryManager test passed\n")
 
 
 def test_learning_modules():
-    """测试学习模块"""
+    """Test learning modules"""
     print("=" * 50)
-    print("测试 5: Learning 学习模块")
+    print("Test 5: Learning Modules")
     print("=" * 50)
 
     tv = TraitVector(dimensions=10)
     tv.set_trait("friendliness", 0.5)
     initial_vector = tv.vector.copy()
 
-    # 反馈更新器
+    # Feedback updater
     updater = FeedbackUpdater(base_learning_rate=0.1)
     updater.update(tv, feedback=0.9, context={"personality_vector": tv.vector.tolist()})
     assert not np.allclose(tv.vector, initial_vector)
-    print(f"  ✓ FeedbackUpdater: friendliness {initial_vector[0]:.3f} -> {tv.vector[0]:.3f}")
+    print(f"  [OK] FeedbackUpdater: friendliness {initial_vector[0]:.3f} -> {tv.vector[0]:.3f}")
 
-    # 模式提取器
+    # Pattern extractor
     interactions = [
-        {"user_input": "你好？", "agent_response": "你好！" * 30, "feedback": 0.8},
-        {"user_input": "你是谁？", "agent_response": "我是AI助手。", "feedback": 0.7},
-        {"user_input": "天气如何？", "agent_response": "今天天气不错。", "feedback": 0.9},
+        {"user_input": "Hello?", "agent_response": "Hello!" * 30, "feedback": 0.8},
+        {"user_input": "Who are you?", "agent_response": "I'm an AI assistant.", "feedback": 0.7},
+        {"user_input": "How's the weather?", "agent_response": "The weather is nice today.", "feedback": 0.9},
     ]
     extractor = PatternExtractor(analysis_window=10)
     patterns = extractor.extract_patterns(interactions)
     assert "avg_feedback" in patterns
-    print(f"  ✓ PatternExtractor: avg_feedback={patterns['avg_feedback']:.2f}")
+    print(f"  [OK] PatternExtractor: avg_feedback={patterns['avg_feedback']:.2f}")
 
     before = tv.vector.copy()
     extractor.update_from_patterns(tv, interactions)
-    print(f"  ✓ 模式更新: norm变化 {np.linalg.norm(before):.3f} -> {np.linalg.norm(tv.vector):.3f}")
+    print(f"  [OK] Pattern update: norm changed {np.linalg.norm(before):.3f} -> {np.linalg.norm(tv.vector):.3f}")
 
-    # RL更新器
+    # RL updater
     rl = RLUpdater()
     rl.record_step(tv.vector, 0.8)
     rl.record_step(tv.vector, 0.9)
@@ -260,26 +259,26 @@ def test_learning_modules():
     avg_return = rl.update(tv)
     assert avg_return is not None
     assert rl.buffer_size == 0
-    print(f"  ✓ RLUpdater: avg_return={avg_return:.3f}")
+    print(f"  [OK] RLUpdater: avg_return={avg_return:.3f}")
 
-    # 反思器（统计模式）
+    # Reflector (statistical mode)
     reflector = Reflector(decision_backend=None)
     result = reflector.reflect(tv, interactions)
     assert result is not None
     assert "analysis" in result
-    print(f"  ✓ Reflector (统计): {result['method']}")
+    print(f"  [OK] Reflector (statistical): {result['method']}")
 
-    print("  [PASS] Learning 测试通过\n")
+    print("  [PASS] Learning test passed\n")
 
 
 def test_agent_core():
-    """测试Agent Core端到端"""
+    """Test Agent Core end-to-end"""
     print("=" * 50)
-    print("测试 6: AgentCore 端到端")
+    print("Test 6: AgentCore End-to-End")
     print("=" * 50)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # 创建各模块
+        # Create modules
         tv = TraitVector(dimensions=10)
         tv.set_trait("friendliness", 0.6)
 
@@ -301,58 +300,58 @@ def test_agent_core():
             personality_store=personality_store,
         )
 
-        # 多轮对话
+        # Multi-turn conversation
         responses = []
         for i in range(5):
-            response = agent.chat(f"测试消息 {i + 1}")
+            response = agent.chat(f"Test message {i + 1}")
             responses.append(response)
-            print(f"  对话 {i + 1}: {response[:50]}...")
+            print(f"  Conversation {i + 1}: {response[:50]}...")
 
         assert len(responses) == 5
         assert agent.memory.count() == 5
-        print(f"  ✓ 5轮对话完成, 记录数: {agent.memory.count()}")
+        print(f"  [OK] 5 turns completed, records: {agent.memory.count()}")
 
-        # 提供反馈
+        # Provide feedback
         initial_personality = tv.vector.copy()
         agent.provide_feedback(0.9)
         agent.provide_feedback(0.2)
         agent.provide_feedback(0.8)
-        print(f"  ✓ 3次反馈已记录")
+        print(f"  [OK] 3 feedbacks recorded")
 
-        # 验证人格发生变化
+        # Verify personality changed
         assert not np.allclose(tv.vector, initial_personality)
-        print(f"  ✓ 人格向量已更新: norm {np.linalg.norm(initial_personality):.3f} -> {np.linalg.norm(tv.vector):.3f}")
+        print(f"  [OK] Personality updated: norm {np.linalg.norm(initial_personality):.3f} -> {np.linalg.norm(tv.vector):.3f}")
 
-        # 查看人格信息
+        # View personality info
         info = agent.get_personality_info()
         assert info["interaction_count"] == 5
         assert info["update_count"] > 0
-        print(f"  ✓ 人格信息: {info['description']}")
+        print(f"  [OK] Personality info: {info['description']}")
 
-        # 验证持久化
+        # Verify persistence
         loaded = personality_store.load()
         assert loaded is not None
-        print(f"  ✓ 人格持久化验证通过")
+        print(f"  [OK] Personality persistence verified")
 
-        # 验证演化历史
+        # Verify evolution history
         history = personality_store.get_evolution_history()
         assert len(history) > 0
-        print(f"  ✓ 演化历史: {len(history)}条快照")
+        print(f"  [OK] Evolution history: {len(history)} snapshots")
 
-        # 验证Markdown文件
+        # Verify Markdown file
         with open(md_path, "r", encoding="utf-8") as f:
             md_content = f.read()
-        assert "测试消息 1" in md_content
-        assert "测试消息 5" in md_content
-        print(f"  ✓ Markdown交互历史验证通过 ({len(md_content)} bytes)")
+        assert "Test message 1" in md_content
+        assert "Test message 5" in md_content
+        print(f"  [OK] Markdown interaction history verified ({len(md_content)} bytes)")
 
-    print("  [PASS] AgentCore 测试通过\n")
+    print("  [PASS] AgentCore test passed\n")
 
 
 def test_decision_backend_switching():
-    """测试决策后端动态切换"""
+    """Test decision backend dynamic switching"""
     print("=" * 50)
-    print("测试 7: 决策后端切换")
+    print("Test 7: Decision Backend Switching")
     print("=" * 50)
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -372,26 +371,26 @@ def test_decision_backend_switching():
             personality_store=personality_store,
         )
 
-        # 使用后端1
-        r1 = agent.chat("你好")
+        # Use backend 1
+        r1 = agent.chat("Hello")
         assert "mock" in agent.decision.get_backend_info()["type"]
-        print(f"  ✓ 后端1响应: {r1[:40]}...")
+        print(f"  [OK] Backend 1 response: {r1[:40]}...")
 
-        # 切换后端
+        # Switch backend
         backend2 = MockDecisionBackend()
         agent.switch_backend(backend2)
-        r2 = agent.chat("再见")
+        r2 = agent.chat("Goodbye")
         assert backend2._call_count == 1
-        print(f"  ✓ 后端2响应: {r2[:40]}...")
+        print(f"  [OK] Backend 2 response: {r2[:40]}...")
 
-    print("  [PASS] 后端切换测试通过\n")
+    print("  [PASS] Backend switching test passed\n")
 
 
-# ==================== 主入口 ====================
+# ==================== Main Entry ====================
 
 def main():
     print("\n" + "=" * 60)
-    print("  Chrysalis 集成测试")
+    print("  Chrysalis Integration Tests")
     print("=" * 60 + "\n")
 
     tests = [
@@ -419,7 +418,7 @@ def main():
             print()
 
     print("=" * 60)
-    print(f"  结果: {passed} 通过, {failed} 失败 (共 {len(tests)} 项)")
+    print(f"  Results: {passed} passed, {failed} failed (total {len(tests)} tests)")
     print("=" * 60)
 
     return 0 if failed == 0 else 1

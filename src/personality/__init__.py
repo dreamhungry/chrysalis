@@ -1,4 +1,4 @@
-"""Personality Core Module - 人格向量表示与持久化"""
+"""Personality Core Module - Trait Vector Representation and Persistence"""
 
 from .trait_vector import TraitVector
 from .personality_store import PersonalityStore

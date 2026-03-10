@@ -1,7 +1,7 @@
-"""强化学习更新器
+"""Reinforcement Learning Updater
 
-使用简化的策略梯度方法，基于用户反馈信号更新人格向量。
-将反馈作为奖励信号，人格向量作为策略参数进行优化。
+Uses simplified policy gradient method to update personality vector based on user feedback signals.
+Treats feedback as reward signal and personality vector as policy parameters for optimization.
 """
 
 import logging
@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class RLUpdater:
-    """强化学习人格更新器
+    """Reinforcement Learning Personality Updater
 
-    将人格演化建模为策略优化问题：
-    - 状态: 对话上下文
-    - 动作: 人格向量方向
-    - 奖励: 用户反馈
+    Models personality evolution as a policy optimization problem:
+    - State: Conversation context
+    - Action: Personality vector direction
+    - Reward: User feedback
     """
 
     def __init__(
@@ -29,33 +29,33 @@ class RLUpdater:
         gamma: float = 0.95,
         baseline_decay: float = 0.99,
     ):
-        """初始化RL更新器
+        """Initialize RL updater
 
         Args:
-            learning_rate: 策略学习率
-            gamma: 折扣因子（用于加权历史奖励）
-            baseline_decay: 奖励基线的指数移动平均衰减率
+            learning_rate: Policy learning rate
+            gamma: Discount factor (for weighting historical rewards)
+            baseline_decay: Exponential moving average decay rate for reward baseline
         """
         self.learning_rate = learning_rate
         self.gamma = gamma
         self.baseline_decay = baseline_decay
-        self._reward_baseline = 0.5  # 初始奖励基线
+        self._reward_baseline = 0.5  # Initial reward baseline
         self._episode_buffer: List[Tuple[np.ndarray, float]] = []
 
     def record_step(self, personality_vector: np.ndarray, reward: float) -> None:
-        """记录一步交互的状态-奖励对
+        """Record a state-reward pair for one interaction step
 
         Args:
-            personality_vector: 当时的人格向量（快照）
-            reward: 用户反馈奖励 [0, 1]
+            personality_vector: Personality vector at that time (snapshot)
+            reward: User feedback reward [0, 1]
         """
         self._episode_buffer.append((personality_vector.copy(), reward))
 
     def compute_returns(self) -> List[float]:
-        """计算折扣回报
+        """Compute discounted returns
 
         Returns:
-            每步的折扣回报列表
+            List of discounted returns for each step
         """
         returns = []
         G = 0.0
@@ -65,15 +65,15 @@ class RLUpdater:
         return returns
 
     def update(self, trait_vector: TraitVector) -> Optional[float]:
-        """基于累积经验执行策略更新
+        """Execute policy update based on accumulated experience
 
-        使用REINFORCE算法的简化版本。
+        Uses a simplified version of REINFORCE algorithm.
 
         Args:
-            trait_vector: 要更新的人格向量
+            trait_vector: Personality vector to update
 
         Returns:
-            平均回报，如果缓冲区为空则返回None
+            Average return, or None if buffer is empty
         """
         if not self._episode_buffer:
             return None
@@ -81,29 +81,29 @@ class RLUpdater:
         returns = self.compute_returns()
         avg_return = np.mean(returns)
 
-        # 更新奖励基线
+        # Update reward baseline
         self._reward_baseline = (
             self.baseline_decay * self._reward_baseline
             + (1 - self.baseline_decay) * avg_return
         )
 
-        # 计算策略梯度
+        # Compute policy gradient
         gradient = np.zeros(trait_vector.dimensions)
         for i, (state_vector, _) in enumerate(self._episode_buffer):
             advantage = returns[i] - self._reward_baseline
 
-            # 简化的策略梯度：用状态向量的变化方向作为梯度
+            # Simplified policy gradient: use state vector change direction as gradient
             direction = state_vector / (np.linalg.norm(state_vector) + 1e-8)
             gradient += advantage * direction
 
-        # 归一化梯度
+        # Normalize gradient
         if np.linalg.norm(gradient) > 0:
             gradient = gradient / (np.linalg.norm(gradient) + 1e-8)
 
-        # 应用更新
+        # Apply update
         trait_vector.update(gradient, self.learning_rate)
 
-        # 清空缓冲区
+        # Clear buffer
         step_count = len(self._episode_buffer)
         self._episode_buffer.clear()
 
@@ -117,5 +117,5 @@ class RLUpdater:
 
     @property
     def buffer_size(self) -> int:
-        """当前缓冲区中的步数"""
+        """Current number of steps in buffer"""
         return len(self._episode_buffer)

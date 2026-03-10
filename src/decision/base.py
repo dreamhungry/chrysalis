@@ -1,6 +1,7 @@
-"""决策后端抽象接口
+"""Decision Backend Abstract Interface
 
-定义统一的决策推理接口，支持LLM、自训练模型、传统AI算法的灵活切换。
+Defines unified decision reasoning interface, supporting flexible switching
+between LLM, self-trained models, and traditional AI algorithms.
 """
 
 from abc import ABC, abstractmethod
@@ -10,10 +11,10 @@ import numpy as np
 
 
 class DecisionBackend(ABC):
-    """决策后端抽象基类
+    """Decision Backend Abstract Base Class
 
-    支持LLM/自训练模型/传统AI的无缝切换。
-    所有具体后端实现必须遵循此接口。
+    Supports seamless switching between LLM/self-trained models/traditional AI.
+    All concrete backend implementations must follow this interface.
     """
 
     @abstractmethod
@@ -24,30 +25,30 @@ class DecisionBackend(ABC):
         conversation_history: List[Dict],
         context: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """生成对话响应
+        """Generate conversation response
 
         Args:
-            user_input: 用户输入文本
-            personality_vector: 当前人格向量
-            conversation_history: 对话历史记录
-            context: 额外上下文信息
+            user_input: User input text
+            personality_vector: Current personality vector
+            conversation_history: Conversation history records
+            context: Additional context information
 
         Returns:
-            生成的响应文本
+            Generated response text
         """
         pass
 
     @abstractmethod
     def update_model(self, training_data: List[Dict]) -> bool:
-        """更新决策模型
+        """Update decision model
 
-        适用于可训练后端（如自训练模型）。
+        Applicable to trainable backends (e.g., self-trained models).
 
         Args:
-            training_data: 训练数据（交互历史+反馈）
+            training_data: Training data (interaction history + feedback)
 
         Returns:
-            是否更新成功
+            Whether update was successful
         """
         pass
 
@@ -55,21 +56,21 @@ class DecisionBackend(ABC):
     def evaluate_action(
         self, action: str, state: Dict, personality_vector: np.ndarray
     ) -> float:
-        """评估动作的效用值
+        """Evaluate utility value of an action
 
-        适用于Utility AI后端。
+        Applicable to Utility AI backend.
 
         Args:
-            action: 候选动作
-            state: 当前状态
-            personality_vector: 人格向量
+            action: Candidate action
+            state: Current state
+            personality_vector: Personality vector
 
         Returns:
-            效用值 [0, 1]
+            Utility value [0, 1]
         """
         pass
 
     @abstractmethod
     def get_backend_info(self) -> Dict[str, Any]:
-        """返回后端类型和配置信息"""
+        """Return backend type and configuration information"""
         pass
