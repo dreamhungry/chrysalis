@@ -43,27 +43,34 @@ Over time, this process allows the agent to form a **consistent behavioral ident
 
 ---
 
-## Key Components
+## Features
 
-### Agent Core
-
-LLM-powered interactive agent responsible for dialogue and decision-making.
+### Trait Vector Representation
+- 10-dimensional latent personality vector
+- Semantic mapping (e.g., dimension 0 = friendliness, dimension 1 = humor)
+- JSON-based persistence for programmatic access
 
 ### Interaction Memory
-
-Stores long-term interaction history and user feedback.
-
-### Trait Core
-
-Latent representation of the agent's behavioral traits.
+- Markdown-based storage for human and LLM readability
+- Temporal sequence recording with feedback support
+- Abstract backend interface (extensible to vector databases)
 
 ### Personality Learning
+- **Feedback-based Update**: Incremental adjustment via user ratings
+- **Pattern Extraction**: Mining recurring interaction patterns
+- **RL Updater**: Reward-driven trait evolution
+- **LLM Reflection**: Self-assessment using the agent's own reasoning
 
-Updates behavioral traits based on interaction experience.
+### Decision Engine
+- **LLM Backend**: Direct LLM reasoning with personality context
+- **Custom Model Backend**: Fine-tuned model integration
+- **Utility AI Backend**: Score-based action selection
+- Personality-driven prompt construction
 
-### Human Interface
-
-Communication layer between users and the agent.
+### Multiple Interfaces
+- **CLI**: Interactive command-line chat
+- **REST API**: FastAPI-based `/chat` and `/feedback` endpoints
+- **Web UI**: Gradio-based conversational interface
 
 ---
 
@@ -71,14 +78,45 @@ Communication layer between users and the agent.
 
 ```
 chrysalis/
-
-agent/          # core agent logic
-personality/    # trait representation
-memory/         # interaction memory
-learning/       # personality adaptation
-interaction/    # human-agent interface
-experiments/    # research experiments
-docs/           # design notes
+├── src/
+│   ├── personality/           # Trait vector & personality store
+│   │   ├── trait_vector.py
+│   │   └── personality_store.py
+│   ├── memory/                 # Interaction memory system
+│   │   ├── base.py             # Abstract backend interface
+│   │   ├── interaction_store.py
+│   │   ├── memory_manager.py
+│   │   └── backends/
+│   │       ├── markdown_backend.py   # Current implementation
+│   │       └── vector_backend.py     # Vector database backend
+│   ├── decision/              # Decision engine
+│   │   ├── base.py            # Abstract decision interface
+│   │   ├── prompt_builder.py
+│   │   └── backends/
+│   │       ├── llm_backend.py
+│   │       ├── custom_model_backend.py
+│   │       └── utility_ai_backend.py
+│   ├── learning/              # Personality learning
+│   │   ├── feedback_updater.py
+│   │   ├── pattern_extractor.py
+│   │   ├── rl_updater.py
+│   │   └── reflector.py
+│   ├── agent/                 # Agent core
+│   │   └── agent_core.py
+│   ├── interfaces/            # User interfaces
+│   │   ├── cli.py
+│   │   ├── api_service.py
+│   │   └── web_ui.py
+│   ├── config.py              # Configuration management
+│   ├── bootstrap.py           # System initialization
+│   └── main.py                # Entry point
+├── configs/
+│   ├── agent_config.yaml      # Agent configuration
+│   └── .env.example           # Environment variables template
+├── tests/
+│   └── test_integration.py    # Integration tests
+├── experiments/               # Research experiments
+└── README.md
 ```
 
 ---
@@ -87,35 +125,160 @@ docs/           # design notes
 
 Chrysalis models personality as an evolving internal state influenced by interaction history and feedback.
 
+```
                     ┌───────────────┐
                     │   Human User  │
                     └───────┬───────┘
                             │
                             ▼
                  ┌────────────────────┐
-                 │ Interaction Layer  │
-                 │  (chat interface)  │
+                 │   Interface Layer  │
+                 │ (CLI/API/Web UI)   │
                  └─────────┬──────────┘
                            │
                            ▼
                  ┌────────────────────┐
                  │      Agent Core    │
-                 │   (LLM reasoning)  │
                  └─────────┬──────────┘
                            │
            ┌───────────────┴───────────────┐
            ▼                               ▼
  ┌──────────────────┐            ┌──────────────────┐
- │ Personality Core │            │ Interaction      │
- │  (trait vector)  │            │ Memory           │
+ │  Personality     │            │  Interaction     │
+ │  (Trait Vector)  │            │  Memory          │
  └─────────┬────────┘            └─────────┬────────┘
            │                               │
            └───────────────┬───────────────┘
                            ▼
                 ┌────────────────────┐
-                │ Personality        │
-                │ Learning Module    │
+                │   Learning Module   │
+                │ (Feedback/Pattern/ │
+                │  RL/Reflection)    │
                 └────────────────────┘
+```
+
+---
+
+## Quick Start
+
+### 1. Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Configuration
+
+Copy and configure environment variables:
+
+```bash
+cp configs/.env.example .env
+```
+
+Edit `.env` with your settings:
+- `LLM_API_BASE`: LLM service endpoint (default: http://localhost:8000)
+- `LLM_MODEL`: Model name
+- `MEMORY_BACKEND`: Storage type (markdown/vector)
+- `DECISION_BACKEND`: Decision method (llm/custom/utility)
+
+### 3. Run
+
+```bash
+# CLI mode
+python -m src.main --cli
+
+# API server
+python -m src.main --api
+
+# Web UI
+python -m src.main --web
+
+# Interactive mode (default)
+python -m src.main
+```
+
+### 4. Docker
+
+```bash
+docker build -t chrysalis .
+docker run -p 8000:8000 chrysalis
+```
+
+---
+
+## Configuration
+
+### Agent Configuration (`configs/agent_config.yaml`)
+
+```yaml
+# LLM Service
+llm:
+  api_base: "http://localhost:8000"
+  model: "qwen2.5"
+  temperature: 0.7
+  max_tokens: 2048
+
+# Personality Vector
+personality:
+  dimensions: 10
+  init_values: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+  dimension_labels:
+    - "friendliness"
+    - "humor"
+    - "formality"
+    - "curiosity"
+    - "patience"
+    - "empathy"
+    - "confidence"
+    - "creativity"
+    - "caution"
+    - "optimism"
+  storage_path: "data/personality/trait_vector.json"
+
+# Memory
+memory:
+  backend: "markdown"
+  markdown_path: "data/interactions/history.md"
+  max_memory_items: 1000
+
+# Decision Engine
+decision:
+  backend: "llm"
+  prompt_template: "default"
+
+# Learning
+learning:
+  feedback_weight: 0.1
+  pattern_threshold: 0.7
+  rl_learning_rate: 0.01
+  reflection_interval: 10
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LLM_API_BASE` | LLM service endpoint | http://localhost:8000 |
+| `LLM_MODEL` | Model name | qwen2.5 |
+| `LLM_API_KEY` | API key (optional) | - |
+| `MEMORY_BACKEND` | Storage backend | markdown |
+| `MEMORY_MARKDOWN_PATH` | Markdown storage path | data/interactions/history.md |
+| `DECISION_BACKEND` | Decision method | llm |
+| `PERSONALITY_PATH` | Personality vector file | data/personality/trait_vector.json |
+
+---
+
+## Data Storage
+
+### Personality Vector
+- **Format**: JSON
+- **Location**: `data/personality/trait_vector.json`
+- **Reason**: Programmatic access efficiency
+
+### Interaction History
+- **Format**: Markdown (.md)
+- **Location**: `data/interactions/history.md`
+- **Reason**: Human-readable and LLM-friendly for context injection
 
 ---
 
@@ -129,29 +292,15 @@ This project investigates three key questions:
 
 ---
 
-## Current Status
+## Testing
 
-Early-stage research prototype.
-
-Planned milestones:
-
-* [ ] Personality representation module
-* [ ] Interaction memory system
-* [ ] Personality learning mechanism
-* [ ] Long-term interaction experiments
-
----
-
-## Vision
-
-Chrysalis explores a simple idea:
-
-> What if AI agents could **grow through interaction**, rather than being statically designed?
-
-By studying evolving behavioral traits, this project aims to better understand **long-term human–AI relationships**.
+```bash
+# Run integration tests
+python -m tests.test_integration
+```
 
 ---
 
 ## License
 
-TBD
+MIT
